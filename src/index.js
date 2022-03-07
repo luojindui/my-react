@@ -130,50 +130,72 @@ import ReactDOM from './react-dom';
 // 		React.createElement('button', { onClick: props.handleClick }, '+'))
 // }
 
+// class Sum extends React.Component{
+// 	constructor() {
+// 		super();
+// 		this.a = React.createRef();
+// 		this.b = React.createRef();
+// 		this.result = React.createRef();
+// 	}
 
-class Counter extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state = { 
-			number: 0,
-		};
-		setInterval(() => {
-			this.setState({ number: this.state.number + 1 });
-		}, 5000);
+// 	handleClick = () => {
+// 		const A = Number(this.a.current.value);
+// 		const B = Number(this.b.current.value);
+// 		const result = A + B;
+// 		this.result.current.value = result;
+// 	}
+
+// 	render() {
+// 		return (
+// 			<div>
+// 				<input ref={this.a}></input>+<input ref={this.b}></input>
+// 				<button onClick={this.handleClick}>=</button>
+// 				<input ref={this.result}></input>
+// 			</div>
+// 		)
+// 	}
+// }
+
+class Form extends React.Component {
+	constructor() {
+		super();
+		this.textInputRef = React.createRef;
 	}
 
-	handleClick = () => {
-		this.setState({ number: this.state.number + 1 });
-		console.log(this.state.number);
-		this.setState({ number: this.state.number + 1 });
-		console.log(this.state.number);
-		setTimeout(() => {
-			// 定时器里 updateQueue.isPending 已经是false了, 所以这里不是批量更新
-			this.setState({ number: this.state.number + 1 });
-			console.log(this.state.number);
-			this.setState({ number: this.state.number + 1 });
-			console.log(this.state.number);
-		});
-	}
-
-	componentDidUpdate() {
-		console.log('*************', this.state.number);
+	getFocus = () => {
+		this.textInputRef.current.focus();
 	}
 
 	render() {
 		return (
-			<div id='Counter'>
-				<div id='number'>{this.state.number}</div>
-				<button id='button' onClick={this.handleClick}>+</button>
+			<div>
+				<ForwardedTextInput ref={this.textInputRef}></ForwardedTextInput>
+				<button onClick={this.getFocus}>获得焦点</button>
 			</div>
 		)
 	}
 }
 
-const element = <Counter />;
+function TextInput(props, forwardRef) {
+	return <input ref={forwardRef}></input>
+}
+const ForwardedTextInput = React.forwardRef(TextInput);
+
+// class TextInput extends React.Component {
+// 	constructor() {
+// 		super();
+// 		this.inputRef = React.createRef();
+// 	}
+// 	getFocus = () => {
+// 		this.inputRef.current.focus();
+// 	}
+// 	render() {
+// 		return <input ref={this.inputRef}></input>
+// 	}
+// }
 
 ReactDOM.render(
-	element,
+	<Form />,
 	document.getElementById('root')
 );
 

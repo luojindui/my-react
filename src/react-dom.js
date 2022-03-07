@@ -1,4 +1,4 @@
-import { REACT_ELEMENT, REACT_TEXT } from "./constants";
+import { REACT_FORWARD_REF_TYPE, REACT_TEXT } from "./constants";
 import { addEvent } from "./event";
 
 function render(vdom, container) {
@@ -16,9 +16,12 @@ function mount(vdom, container) {
  * @param {*} vdom 
  */
 function createDOM(vdom) {
-    let { type, props } = vdom;
+    const { type, props, ref } = vdom;
     let dom; // 真实dom
-    if (type === REACT_TEXT) {
+    if (type && type.$$typeof === REACT_FORWARD_REF_TYPE) {
+        // 函数组件ref
+        return mountForwardComponent(vdom);
+    } else if (type === REACT_TEXT) {
         dom = document.createTextNode(props.content);
     } else if (typeof type === 'function') {
         if (type.isReactComponent) {
@@ -31,7 +34,7 @@ function createDOM(vdom) {
     }
     if (props) {
         updateProps(dom, null, props);
-        const {children} = props;
+        const { children } = props;
         if (typeof children === 'object' && children.type) {
             mount(children, dom);
         } else if (Array.isArray(children)) {
@@ -39,11 +42,14 @@ function createDOM(vdom) {
         }
     }
     vdom.dom = dom;
+    if (ref) {
+        ref.current = dom;
+    }
     return dom
 }
 
 export function findDOM(vdom) {
-    if (!vdom) {return null;}
+    if (!vdom) { return null; }
     if (vdom.dom) {
         // vdom上有dom属性说明是原生dom节点
         return vdom.dom;
@@ -84,11 +90,23 @@ function mountFunctionConponent(vdom) {
  * @param {*} parentDOM 
  */
 function mountClassConponent(vdom) {
-    const { type, props } = vdom;
+    const { type, props, ref } = vdom;
     // 函数式组件type是一个方法, 返回一个vdom
     const classInstance = new type(props);
+    if (ref) {
+        ref.current = classInstance;
+    }
     const renderVDOM = classInstance.render();
     vdom.oldRenderVDOM = classInstance.oldRenderVDOM = renderVDOM;
+    return createDOM(renderVDOM);
+}
+
+function mountForwardComponent(vdom) {
+    // vdom = { type: ForwardedTextInput, props: {}, ref: this.ref }
+    // ForwardedTextInput = { render, $$typeof }
+    const { type, props, ref } = vdom;
+    const renderVDOM = type.render(props, ref);
+    vdom.oldRenderVDOM = renderVDOM;
     return createDOM(renderVDOM);
 }
 
@@ -109,7 +127,7 @@ function reconcileChildren(children, parentDOM) {
 function updateProps(dom, oldProps = {}, newProps = {}) {
     for (const key in newProps) {
         if (key === 'children') {
-            continue;            
+            continue;
         } else if (key === 'style') {
             const styles = newProps[key];
             for (const attr in styles) {

@@ -1,4 +1,4 @@
-import { REACT_ELEMENT, REACT_TEXT } from './constants';
+import { REACT_ELEMENT, REACT_FORWARD_REF_TYPE } from './constants';
 import { wrapToVDOM } from './utils';
 import { Component } from './component';
 
@@ -19,7 +19,7 @@ function createElement(type, config = {}, children) {
         delete config.ref;
         delete config.key;
     }
-    let props = {...config};
+    let props = { ...config };
     if (arguments.length > 3) {
         props.children = Array.prototype.slice.call(arguments, 2).map(wrapToVDOM)
     } else {
@@ -34,9 +34,22 @@ function createElement(type, config = {}, children) {
     }
 }
 
+function createRef() {
+    return { current: null };
+}
+
+function forwardRef(render) {
+    return {
+        $$typeof: REACT_FORWARD_REF_TYPE,
+        render,
+    }
+}
+
 const React = {
     createElement,
     Component,
+    createRef,
+    forwardRef,
 }
 
 export default React;

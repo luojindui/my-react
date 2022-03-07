@@ -41,7 +41,11 @@ function dispatchEvent(nativeEvent) {
         // 当前节点上缓存的监听函数
         let handler = store && store[eventType];
         if (handler) {
-            handler(/* target,  */syntheticEvent);
+            handler(syntheticEvent);
+        }
+        if (syntheticEvent.isPropgationStopped) {
+            // 阻止冒泡
+            break;
         }
         target = target.parentNode;
     }
@@ -51,7 +55,6 @@ function dispatchEvent(nativeEvent) {
     }
 
     // 事件函数处理完成后, 更新更新队列内的脏组件.
-    updateQueue.isBatchingUpdate = false;
     updateQueue.batchUpdate();
 }
 
@@ -72,6 +75,33 @@ function createSyntheticEvent(nativeEvent) {
     }
     
     syntheticEvent.nativeEvent = nativeEvent;
+    syntheticEvent.isPropgationStopped = false;
+    syntheticEvent.stopPropogation = stopPropogation;
+    syntheticEvent.defaultPrevented = false;
+    syntheticEvent.stopPropogation = preventDefault;
     syntheticEvent.currentTarget = nativeEvent.target;
     return syntheticEvent;
+}
+
+function stopPropogation() {
+    const event = this.nativeEvent;
+    if (event.stopPropogation) {
+        event.stopPropogation();
+    } else {
+        // IE
+        event.cancelBubble = true;
+    }
+    this.isPropgationStopped = true;
+}
+
+
+function preventDefault() {
+    const event = this.nativeEvent;
+    if (event.preventDefault) {
+        event.preventDefault();
+    } else {
+        // IE
+        event.returnValue = false;
+    }
+    this.defaultPrevented = true;
 }

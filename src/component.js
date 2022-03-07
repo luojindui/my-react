@@ -48,7 +48,7 @@ export let updateQueue = {
         updateQueue.updaters.clear();
     },
     batchUpdate() {
-        for (const updater in updateQueue.updaters) {
+        for (const updater of updateQueue.updaters) {
             updater.updateComponent();
         }
         updateQueue.isBatchingUpdate = false;
