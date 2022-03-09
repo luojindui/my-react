@@ -12,7 +12,6 @@ export class Component {
     }
 
     setState(partialState, callback) {
-        console.log('setState');
         this.updater.addState(partialState, callback);
     }
 
@@ -22,18 +21,24 @@ export class Component {
         const oldRenderVDOM = this.oldRenderVDOM;
         // 获取真实dom
         const oldDOM = findDOM(oldRenderVDOM);
+        if (this.constructor.getDerivedStateFromProps) {
+            const newState = this.constructor.getDerivedStateFromProps(this.props, this.state);
+            if (newState) {
+                this.state = { ...this.state, ...newState };
+            }
+        }
+        // 得到快照
+        const snapshot = this.getSnapshotBeforeUpdate && this.getSnapshotBeforeUpdate()
+
         // render获取新的vdom
         const newRenderVDOM = this.render();
         // 对比新老vdom的差异并更新
-        compareTwoVDOM(oldDOM.parentNode, oldRenderVDOM, newRenderVDOM);
+        compareTwoVDOM(oldDOM && oldDOM.parentNode, oldRenderVDOM, newRenderVDOM);
         this.oldRenderVDOM = newRenderVDOM;
 
-        if (this.componentWillUpdate) {
-            this.componentWillUpdate();
-        }
-
+        // 已经更新
         if (this.componentDidUpdate) {
-            this.componentDidUpdate();
+            this.componentDidUpdate(this.props, this.state, snapshot);
         }
     }
 }
@@ -81,11 +86,11 @@ class Updater {
     emitUpdate(nextProps) {
         this.nextProps = nextProps;
         // 如果有新属性或需要同步更新
-        if (nextProps || !updateQueue.isBatchingUpdate) {
-            this.updateComponent();
-        } else {
+        if (updateQueue.isBatchingUpdate) {
             // 异步更新
             updateQueue.add(this);
+        } else {
+            this.updateComponent();
         }
     }
 
@@ -121,12 +126,21 @@ class Updater {
 
 // 判断是否需要更新
 function shouldUpdate(classInstance, nextProps, nextState) {
-    // 不管是否更新, props和state都会改变
-    classInstance.props = nextProps;
-    classInstance.state = nextState;
+    let willUpdate = true;
     if (classInstance.shouldComponentUpdate && !classInstance.shouldComponentUpdate(nextProps, nextState)) {
         // 不更新
-        return false;
+        willUpdate = false;
     }
-    classInstance.forceUpdate();
+    if (willUpdate && classInstance.componentWillUpdate) {
+        // will update
+        classInstance.componentWillUpdate();
+    }
+    // 不管是否更新, state都要赋值给 classInstance
+    classInstance.state = nextState;
+    if (nextProps) {
+        classInstance.props = nextProps;
+    }
+    if (willUpdate) {
+        classInstance.forceUpdate();
+    }
 }

@@ -29,22 +29,22 @@ export function addEvent(dom, eventType, handler) {
  */
 function dispatchEvent(nativeEvent) {
     let { type, target } = nativeEvent;
-    let eventType = 'on' + type;
-    syntheticEvent = createSyntheticEvent(nativeEvent);
+    const eventType = 'on' + type;
+    const syntheticEvent = createSyntheticEvent(nativeEvent);
 
     // 事件函数内可能会引起多次的组件更新, 所以在事件监听函数执行前进入批量更新模式
     updateQueue.isBatchingUpdate = true;
 
     // 模仿事件冒泡
     while (target) {
-        let { _store: store } = target;
+        const { _store: store } = target;
         // 当前节点上缓存的监听函数
-        let handler = store && store[eventType];
+        const handler = store && store[eventType];
         if (handler) {
             handler(syntheticEvent);
         }
+        // 阻止冒泡
         if (syntheticEvent.isPropgationStopped) {
-            // 阻止冒泡
             break;
         }
         target = target.parentNode;
@@ -55,14 +55,12 @@ function dispatchEvent(nativeEvent) {
     }
 
     // 事件函数处理完成后, 更新更新队列内的脏组件.
+    updateQueue.isBatchingUpdate = false;
     updateQueue.batchUpdate();
 }
 
-let syntheticEvent;
 function createSyntheticEvent(nativeEvent) {
-    if (!syntheticEvent) {
-        syntheticEvent = {};
-    }
+    let syntheticEvent = {};
     for (const key in nativeEvent) {
         if (nativeEvent.hasOwnProperty(key)) {
             const element = nativeEvent[key];
@@ -79,7 +77,6 @@ function createSyntheticEvent(nativeEvent) {
     syntheticEvent.stopPropogation = stopPropogation;
     syntheticEvent.defaultPrevented = false;
     syntheticEvent.stopPropogation = preventDefault;
-    syntheticEvent.currentTarget = nativeEvent.target;
     return syntheticEvent;
 }
 

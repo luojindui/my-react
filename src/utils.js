@@ -10,3 +10,9 @@ export function wrapToVDOM(element) {
 export function isFunction(obj) {
     return typeof obj === 'function';
 }
+
+export function flatten(arr) {
+    let res = []
+    arr.forEach(a => Array.isArray(a) ? res.push(...flatten(a)) : res.push(a))
+    return res
+}

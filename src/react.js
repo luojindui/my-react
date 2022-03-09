@@ -1,13 +1,13 @@
 import { REACT_ELEMENT, REACT_FORWARD_REF_TYPE } from './constants';
-import { wrapToVDOM } from './utils';
+import { flatten, wrapToVDOM } from './utils';
 import { Component } from './component';
 
 /**
- * 生成React的工厂方法
+ * 生成ReactElement的工厂方法
  * @param {*} type dom元素类型
  * @param {*} config 配置对象
  * @param  {...any} children 子元素
- * @returns 
+ * @returns vdom
  */
 function createElement(type, config = {}, children) {
     let key, ref;
@@ -21,8 +21,9 @@ function createElement(type, config = {}, children) {
     }
     let props = { ...config };
     if (arguments.length > 3) {
-        props.children = Array.prototype.slice.call(arguments, 2).map(wrapToVDOM)
+        props.children = flatten(Array.prototype.slice.call(arguments, 2)).map(wrapToVDOM)
     } else {
+        // 把文字节点包装成vdom
         props.children = wrapToVDOM(children);
     }
     return {
@@ -45,11 +46,18 @@ function forwardRef(render) {
     }
 }
 
+let Children = {
+    map(children, mapFn) {
+        return flatten(children).map(mapFn);
+    }
+}
+
 const React = {
     createElement,
     Component,
     createRef,
     forwardRef,
+    Children,
 }
 
 export default React;
